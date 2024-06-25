@@ -1,8 +1,10 @@
 from can import Message
 import datetime
+import threading
 
-class CANProcessor:
+class DeltaTime(threading.Thread):
     def __init__(self, base_latitude=47.0, base_longitude=26.0):
+        super().__init__()
         self.base_latitude = base_latitude
         self.base_longitude = base_longitude
         self.start_time_str = None
@@ -11,6 +13,7 @@ class CANProcessor:
 
     def format_unix_timestamp(self, input_string):
         try:
+            input_string = str(input_string)
             timestamp_index = input_string.find("Timestamp: ")
             if timestamp_index != -1:
                 substring = input_string[timestamp_index + len("Timestamp: "):]
@@ -46,8 +49,9 @@ class CANProcessor:
             delta = self.calculate_delta_time(start_time, end_time)
             is_negative = delta.total_seconds() < 0
             minutes, seconds, milliseconds = self.delta_to_min_sec_millis(delta)
-            sign = "-" if is_negative else ""
-            formatted_delta_time = f"{sign}{minutes:02}:{seconds:02}:{milliseconds:03}"
+            sign = int(-1) if is_negative else int(1)
+            formatted_delta_time = (int(seconds) + int(milliseconds)/1000)*sign
+            print(type(formatted_delta_time))
             return formatted_delta_time
         except ValueError as e:
             return f"Error: {e}"
@@ -58,7 +62,7 @@ class CANProcessor:
 
     def verify_id_0x116(self, input_string):
         # Simulating verification of ID 0x116
-        return "ID: 0x116" in input_string
+        return "ID: 0x0116" in input_string
 
     def process_message_from_string(self, input_string):
         try:
@@ -77,7 +81,7 @@ class CANProcessor:
                 else:
                     return self.last_delta_time
 
-            if self.verify_id_0x116(input_string):
+            if 1:
                 self.start_time_str = self.end_time_str
                 self.end_time_str = self.format_unix_timestamp(input_string)
                 updated_delta_time = self.calculate_time_delta(self.start_time_str, self.end_time_str)
@@ -95,7 +99,7 @@ class CANProcessor:
 if __name__ == "__main__":
     base_latitude = 47.0
     base_longitude = 26.0
-    processor = CANProcessor(base_latitude, base_longitude)
+    processor = DeltaTime(base_latitude, base_longitude)
 
     # Example sequence of CAN messages (including decreasing timestamps)
     example_messages = [
